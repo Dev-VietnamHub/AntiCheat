@@ -149,67 +149,99 @@ Tab:AddToggle({
     end
 })
 
--- ================== FREECAM (PC + MOBILE) ==================
-_G.Freecam=false
-local camCF = CFrame.new()
-local yaw,pitch=0,0
-local speed=1.3
+-- ================== FREECAM FIXED (NO SHAKE | PC + MOBILE) ==================
+_G.Freecam = false
 
--- Mobile control
-local moveVec = Vector3.zero
-local upDown = 0
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+local camPos
+local yaw, pitch = 0, 0
+local speed = 1.4
+local sensitivity = 0.002
+
+local keys = {W=0,A=0,S=0,D=0,Q=0,E=0}
 
 local function startFreecam()
-    camCF = Camera.CFrame
+    local cf = Camera.CFrame
+    camPos = cf.Position
+    yaw, pitch = 0, 0
+
     Camera.CameraType = Enum.CameraType.Scriptable
+    UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    UserInputService.MouseIconEnabled = false
 end
 
 local function stopFreecam()
     Camera.CameraType = Enum.CameraType.Custom
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    UserInputService.MouseIconEnabled = true
 end
 
--- PC input
-local keys={W=0,A=0,S=0,D=0,Q=0,E=0}
+-- PC keyboard
 UserInputService.InputBegan:Connect(function(i,gp)
     if gp then return end
-    if keys[i.KeyCode.Name]~=nil then keys[i.KeyCode.Name]=1 end
-end)
-UserInputService.InputEnded:Connect(function(i)
-    if keys[i.KeyCode.Name]~=nil then keys[i.KeyCode.Name]=0 end
+    if keys[i.KeyCode.Name] ~= nil then keys[i.KeyCode.Name] = 1 end
 end)
 
--- Mobile touch rotate
+UserInputService.InputEnded:Connect(function(i)
+    if keys[i.KeyCode.Name] ~= nil then keys[i.KeyCode.Name] = 0 end
+end)
+
+-- Mouse (PC)
+UserInputService.InputChanged:Connect(function(i)
+    if not _G.Freecam then return end
+    if i.UserInputType == Enum.UserInputType.MouseMovement then
+        yaw -= i.Delta.X * sensitivity
+        pitch = math.clamp(pitch - i.Delta.Y * sensitivity, -1.5, 1.5)
+    end
+end)
+
+-- Touch (Mobile)
 UserInputService.TouchMoved:Connect(function(t, gp)
     if not _G.Freecam or gp then return end
-    local d = t.Delta
-    yaw -= d.X*0.003
-    pitch = math.clamp(pitch-d.Y*0.003,-1.5,1.5)
+    yaw -= t.Delta.X * sensitivity * 1.5
+    pitch = math.clamp(pitch - t.Delta.Y * sensitivity * 1.5, -1.5, 1.5)
 end)
 
+-- Update camera (NO multiply stacking)
 RunService.RenderStepped:Connect(function()
     if not _G.Freecam then return end
 
-    -- PC move
-    local dir = Vector3.new(
-        keys.D-keys.A,
-        keys.E-keys.Q,
-        keys.S-keys.W
+    local moveDir = Vector3.new(
+        keys.D - keys.A,
+        keys.E - keys.Q,
+        keys.S - keys.W
     )
 
-    camCF = camCF * CFrame.fromOrientation(pitch,yaw,0)
-    camCF += camCF:VectorToWorldSpace(dir) * speed
-    Camera.CFrame = camCF
+    local rot = CFrame.fromOrientation(pitch, yaw, 0)
+    camPos += rot:VectorToWorldSpace(moveDir) * speed
+    Camera.CFrame = CFrame.new(camPos) * rot
 end)
 
+-- ================== FREECAM TOGGLE (UI) ==================
 Tab:AddToggle({
-    Name="🎥 Freecam (PC + Mobile)",
-    Default=false,
-    Callback=function(v)
-        _G.Freecam=v
-        if v then startFreecam() else stopFreecam() end
+    Name = "🎥 Freecam (Mượt – Không Rung)",
+    Default = false,
+    Callback = function(v)
+        _G.Freecam = v
+        if v then
+            startFreecam()
+            OrionLib:MakeNotification({
+                Name = "Freecam",
+                Content = "Đã bật Freecam (mượt)",
+                Time = 2
+            })
+        else
+            stopFreecam()
+            OrionLib:MakeNotification({
+                Name = "Freecam",
+                Content = "Đã tắt Freecam",
+                Time = 2
+            })
+        end
     end
 })
-
 -- ================== HOP SERVER ==================
 Tab:AddButton({
     Name="🌐 Hop Server",
