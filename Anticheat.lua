@@ -1,100 +1,136 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/vinh12eqweaws/zingmods/refs/heads/main/zingpro')))()
+-- ================== LOAD UI ==================
+local OrionLib = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/vinh12eqweaws/zingmods/refs/heads/main/zingpro"
+))()
 
-local Window = OrionLib:MakeWindow({Name = "Anti Cheat", HidePremium = false, SaveConfig = true, ConfigFolder = "dxl_bf"})
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlaceId = game.PlaceId
+
+-- ================== WINDOW ==================
+local Window = OrionLib:MakeWindow({
+    Name = "Blox Fruits | Anti Cheat ULTIMATE",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "bf_anticheat"
+})
 
 local Tab = Window:MakeTab({
-	Name = "Tab 1",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
+    Name = "Anti‑Cheat",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
 })
-Tab:AddButton({
-	Name = "Quét Hacker",
-	Callback = function()
-		local Players = game:GetService("Players")
-		local LocalPlayer = Players.LocalPlayer
 
-		local lastPos = {}
-		local flags = {}
+-- ================== CONFIG ==================
+local TELEPORT_DIST = 80
+local SPEED_LIMIT = 45
+local FAST_ATTACK_TIME = 0.18
+local NEED_FLAGS = 3
 
-		local TELEPORT_DIST = 90
-		local NEED_FLAGS = 3
-		local SCAN_DELAY = 0.2
+-- ================== DATA ==================
+local lastPos = {}
+local lastHit = {}
+local flags = {}
+local detected = {}
 
-		local function scanOnce()
-			for _, plr in pairs(Players:GetPlayers()) do
-				if plr ~= LocalPlayer and plr.Character then
-					local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-					if hrp then
-						flags[plr] = flags[plr] or 0
-						if lastPos[plr] then
-							local dist = (hrp.Position - lastPos[plr]).Magnitude
-							if dist > TELEPORT_DIST then
-								flags[plr] += 1
-							end
-						end
-						lastPos[plr] = hrp.Position
-					end
-				end
-			end
-		end
+-- ================== FLAG SYSTEM ==================
+local function addFlag(plr, reason)
+    flags[plr] = (flags[plr] or 0) + 1
 
-		OrionLib:MakeNotification({
-			Name = "Anti‑Cheat",
-			Content = "Đang quét hành vi bất thường...",
-			Time = 2
-		})
+    if flags[plr] >= NEED_FLAGS and not detected[plr] then
+        detected[plr] = true
 
-		flags = {}
+        OrionLib:MakeNotification({
+            Name = "⚠ PHÁT HIỆN NGHI NGỜ",
+            Content = plr.Name .. " | " .. reason,
+            Time = 6
+        })
 
-		scanOnce()
-		task.wait(SCAN_DELAY)
-		scanOnce()
-		task.wait(SCAN_DELAY)
-		scanOnce()
+        print("[ANTI‑CHEAT] Nghi ngờ:", plr.Name, reason)
+    end
+end
 
-		local found = false
-		for plr, count in pairs(flags) do
-			if count >= NEED_FLAGS then
-				found = true
-				OrionLib:MakeNotification({
-					Name = "⚠ NGHI NGỜ",
-					Content = plr.Name .. " | Teleport bất thường (" .. count .. ")",
-					Time = 5
-				})
-			end
-		end
+-- ================== SCAN FUNCTION ==================
+local function scanPlayers()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+            local hum = plr.Character:FindFirstChild("Humanoid")
 
-		if not found then
-			OrionLib:MakeNotification({
-				Name = "Anti‑Cheat",
-				Content = "✅ Không phát hiện hành vi đáng ngờ.",
-				Time = 4
-			})
-		end
-	end
-})
-Tab:AddButton({
-	Name = "Hop Server",
-	Callback = function()
-        _G.AutoHopServer = true  -- bật chế độ hop server
-        if not RejoinRunning then
-            RejoinRunning = true
-            task.spawn(function()
-                while _G.AutoHopServer do
-                    task.wait(5) -- thử nghiệm 5 giây, đổi 1800 cho 30 phút
+            if hrp then
+                -- TELEPORT
+                if lastPos[plr] then
+                    local dist = (hrp.Position - lastPos[plr]).Magnitude
+                    if dist > TELEPORT_DIST then
+                        addFlag(plr, "Teleport bất thường")
+                    end
 
-                    if not _G.AutoRejoin30m then break end
-
-                    local NewServer = GetNewServer()
-
-                    if NewServer then
-                        TeleportService:TeleportToPlaceInstance(PlaceId, NewServer, LocalPlayer)
-                    else
-                        TeleportService:Teleport(PlaceId, LocalPlayer)
+                    -- SPEED
+                    local speed = dist / (1/0.06)
+                    if speed > SPEED_LIMIT then
+                        addFlag(plr, "Speed Hack")
                     end
                 end
-                RejoinRunning = false
-            end)
+                lastPos[plr] = hrp.Position
+            end
+
+            -- FAST ATTACK
+            if hum and hum.Health < hum.MaxHealth then
+                local now = tick()
+                if lastHit[plr] and (now - lastHit[plr]) < FAST_ATTACK_TIME then
+                    addFlag(plr, "Fast Attack / Kill Aura")
+                end
+                lastHit[plr] = now
+            end
+        end
+    end
+end
+
+-- ================== BUTTON: SCAN ==================
+Tab:AddButton({
+    Name = "🔍 Quét Hacker",
+    Callback = function()
+        flags = {}
+        detected = {}
+        lastPos = {}
+        lastHit = {}
+
+        OrionLib:MakeNotification({
+            Name = "Anti‑Cheat",
+            Content = "Đang quét hành vi bất thường...",
+            Time = 3
+        })
+
+        for i = 1, 5 do
+            scanPlayers()
+            task.wait(0.25)
+        end
+
+        if next(detected) == nil then
+            OrionLib:MakeNotification({
+                Name = "Anti‑Cheat",
+                Content = "✅ Server hiện tại không phát hiện hành vi đáng ngờ",
+                Time = 4
+            })
         end
     end
 })
+
+-- ================== BUTTON: HOP SERVER ==================
+Tab:AddButton({
+    Name = "🌐 Hop Server",
+    Callback = function()
+        OrionLib:MakeNotification({
+            Name = "Server Hop",
+            Content = "Đang chuyển server...",
+            Time = 3
+        })
+        task.wait(1)
+        TeleportService:Teleport(PlaceId, LocalPlayer)
+    end
+})
+
+OrionLib:Init()
