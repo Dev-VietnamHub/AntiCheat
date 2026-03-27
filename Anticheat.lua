@@ -61,15 +61,14 @@ local function scanPlayers()
             local hum = plr.Character:FindFirstChild("Humanoid")
 
             if hrp then
-                -- TELEPORT
                 if lastPos[plr] then
                     local dist = (hrp.Position - lastPos[plr]).Magnitude
+
                     if dist > TELEPORT_DIST then
                         addFlag(plr, "Teleport bất thường")
                     end
 
-                    -- SPEED
-                    local speed = dist / (1/0.06)
+                    local speed = dist / 0.06
                     if speed > SPEED_LIMIT then
                         addFlag(plr, "Speed Hack")
                     end
@@ -77,7 +76,6 @@ local function scanPlayers()
                 lastPos[plr] = hrp.Position
             end
 
-            -- FAST ATTACK
             if hum and hum.Health < hum.MaxHealth then
                 local now = tick()
                 if lastHit[plr] and (now - lastHit[plr]) < FAST_ATTACK_TIME then
@@ -88,6 +86,53 @@ local function scanPlayers()
         end
     end
 end
+
+-- ================== ESP SYSTEM ==================
+_G.ESPEnabled = false
+local ESPs = {}
+
+local function CreateESP(plr)
+    if plr == LocalPlayer or ESPs[plr] then return end
+
+    local function apply(char)
+        local head = char:WaitForChild("Head", 5)
+        if not head then return end
+
+        local gui = Instance.new("BillboardGui")
+        gui.Name = "ESP_NAME"
+        gui.Adornee = head
+        gui.Size = UDim2.new(0, 200, 0, 50)
+        gui.StudsOffset = Vector3.new(0, 2.8, 0)
+        gui.AlwaysOnTop = true
+
+        local txt = Instance.new("TextLabel")
+        txt.Parent = gui
+        txt.Size = UDim2.new(1, 0, 1, 0)
+        txt.BackgroundTransparency = 1
+        txt.Text = plr.Name
+        txt.TextScaled = true
+        txt.Font = Enum.Font.GothamBold
+        txt.TextStrokeTransparency = 0
+        txt.TextColor3 = Color3.fromRGB(255, 80, 80)
+
+        gui.Parent = head
+        ESPs[plr] = gui
+    end
+
+    if plr.Character then
+        apply(plr.Character)
+    end
+    plr.CharacterAdded:Connect(apply)
+end
+
+local function RemoveESP(plr)
+    if ESPs[plr] then
+        ESPs[plr]:Destroy()
+        ESPs[plr] = nil
+    end
+end
+
+Players.PlayerRemoving:Connect(RemoveESP)
 
 -- ================== BUTTON: SCAN ==================
 Tab:AddButton({
@@ -112,9 +157,28 @@ Tab:AddButton({
         if next(detected) == nil then
             OrionLib:MakeNotification({
                 Name = "Anti‑Cheat",
-                Content = "✅ Server hiện tại không phát hiện hành vi đáng ngờ",
+                Content = "✅ Không phát hiện hành vi đáng ngờ",
                 Time = 4
             })
+        end
+    end
+})
+
+-- ================== TOGGLE: ESP ==================
+Tab:AddToggle({
+    Name = "👁 ESP Người Chơi (Hiện Tên)",
+    Default = false,
+    Callback = function(v)
+        _G.ESPEnabled = v
+
+        if v then
+            for _, plr in pairs(Players:GetPlayers()) do
+                CreateESP(plr)
+            end
+        else
+            for plr,_ in pairs(ESPs) do
+                RemoveESP(plr)
+            end
         end
     end
 })
