@@ -179,6 +179,63 @@ Tab:AddToggle({
     end
 })
 
+-- ================== FPS BOOST / REDUCE LAG ==================
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local function ReduceLag()
+    -- Lighting
+    pcall(function()
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 1e9
+        Lighting.Brightness = 1
+        Lighting.EnvironmentDiffuseScale = 0
+        Lighting.EnvironmentSpecularScale = 0
+    end)
+
+    -- Remove heavy effects
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("ParticleEmitter")
+        or v:IsA("Trail")
+        or v:IsA("Beam")
+        or v:IsA("Smoke")
+        or v:IsA("Fire")
+        or v:IsA("Explosion")
+        then
+            pcall(function() v.Enabled = false end)
+        end
+
+        if v:IsA("BasePart") then
+            pcall(function()
+                v.Material = Enum.Material.Plastic
+                v.Reflectance = 0
+                v.CastShadow = false
+            end)
+        end
+    end
+
+    -- Terrain
+    pcall(function()
+        Workspace.Terrain.WaterWaveSize = 0
+        Workspace.Terrain.WaterWaveSpeed = 0
+        Workspace.Terrain.WaterReflectance = 0
+        Workspace.Terrain.WaterTransparency = 1
+    end)
+    
+    Tab:AddButton({
+    Name = "⚡ Giảm Lag / FPS Boost",
+    Callback = function()
+        ReduceLag()
+    end
+})
+
+    -- Notify
+    OrionLib:MakeNotification({
+        Name = "FPS BOOST",
+        Content = "✅ Đã giảm lag & tối ưu FPS",
+        Time = 4
+    })
+end
 -- ================== HOP SERVER ==================
 Tab:AddButton({
     Name = "🌐 Hop Server",
