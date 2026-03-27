@@ -73,3 +73,28 @@ Tab:AddButton({
 		end
 	end
 })
+Tab:AddButton({
+	Name = "Hop Server",
+	Callback = function()
+        _G.AutoHopServer = true  -- bật chế độ hop server
+        if not RejoinRunning then
+            RejoinRunning = true
+            task.spawn(function()
+                while _G.AutoHopServer do
+                    task.wait(5) -- thử nghiệm 5 giây, đổi 1800 cho 30 phút
+
+                    if not _G.AutoRejoin30m then break end
+
+                    local NewServer = GetNewServer()
+
+                    if NewServer then
+                        TeleportService:TeleportToPlaceInstance(PlaceId, NewServer, LocalPlayer)
+                    else
+                        TeleportService:Teleport(PlaceId, LocalPlayer)
+                    end
+                end
+                RejoinRunning = false
+            end)
+        end
+    end
+})
