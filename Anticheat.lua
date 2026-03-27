@@ -6,6 +6,8 @@ local OrionLib = loadstring(game:HttpGet(
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
@@ -31,10 +33,7 @@ local FAST_ATTACK_TIME = 0.18
 local NEED_FLAGS = 3
 
 -- ================== DATA ==================
-local lastPos = {}
-local lastHit = {}
-local flags = {}
-local detected = {}
+local lastPos, lastHit, flags, detected = {}, {}, {}, {}
 
 -- ================== FLAG SYSTEM ==================
 local function addFlag(plr, reason)
@@ -49,31 +48,24 @@ local function addFlag(plr, reason)
     end
 end
 
--- ================== SCAN FUNCTION ==================
+-- ================== SCAN ==================
 local function scanPlayers()
     for _, plr in pairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character then
             local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
             local hum = plr.Character:FindFirstChild("Humanoid")
-
             if hrp then
                 if lastPos[plr] then
                     local dist = (hrp.Position - lastPos[plr]).Magnitude
-                    if dist > TELEPORT_DIST then
-                        addFlag(plr, "Teleport bất thường")
-                    end
-                    local speed = dist / 0.06
-                    if speed > SPEED_LIMIT then
-                        addFlag(plr, "Speed Hack")
-                    end
+                    if dist > TELEPORT_DIST then addFlag(plr,"Teleport") end
+                    if (dist/0.06) > SPEED_LIMIT then addFlag(plr,"Speed") end
                 end
                 lastPos[plr] = hrp.Position
             end
-
             if hum and hum.Health < hum.MaxHealth then
                 local now = tick()
-                if lastHit[plr] and (now - lastHit[plr]) < FAST_ATTACK_TIME then
-                    addFlag(plr, "Fast Attack / Kill Aura")
+                if lastHit[plr] and (now-lastHit[plr]) < FAST_ATTACK_TIME then
+                    addFlag(plr,"Fast Attack")
                 end
                 lastHit[plr] = now
             end
@@ -81,114 +73,147 @@ local function scanPlayers()
     end
 end
 
--- ================== BUTTON: SCAN ==================
 Tab:AddButton({
     Name = "🔍 Quét Hacker",
     Callback = function()
-        flags, detected, lastPos, lastHit = {}, {}, {}, {}
-        OrionLib:MakeNotification({
-            Name = "Anti‑Cheat",
-            Content = "Đang quét hành vi bất thường...",
-            Time = 3
-        })
-        for i = 1, 5 do
-            scanPlayers()
-            task.wait(0.25)
-        end
-        if next(detected) == nil then
+        lastPos, lastHit, flags, detected = {}, {}, {}, {}
+        for i=1,5 do scanPlayers(); task.wait(0.25) end
+        if next(detected)==nil then
             OrionLib:MakeNotification({
-                Name = "Anti‑Cheat",
-                Content = "✅ Không phát hiện người chơi đáng ngờ",
-                Time = 4
+                Name="Anti‑Cheat",
+                Content="✅ Không phát hiện người chơi đáng ngờ",
+                Time=3
             })
         end
     end
 })
 
--- ================== ESP SYSTEM ==================
+-- ================== ESP ==================
 _G.ESPEnabled = false
 local ESPs = {}
 
 local function CreateESP(plr)
-    if plr == LocalPlayer or ESPs[plr] then return end
-
+    if plr==LocalPlayer or ESPs[plr] then return end
     local function apply(char)
-        local head = char:WaitForChild("Head", 5)
-        local hrp = char:WaitForChild("HumanoidRootPart", 5)
+        local head = char:WaitForChild("Head",5)
+        local hrp = char:WaitForChild("HumanoidRootPart",5)
         if not head or not hrp then return end
 
         local gui = Instance.new("BillboardGui")
-        gui.Name = "ESP_NAME"
-        gui.Adornee = head
-        gui.Size = UDim2.new(0, 160, 0, 30)
-        gui.StudsOffset = Vector3.new(0, 2.3, 0)
+        gui.Size = UDim2.new(0,160,0,30)
+        gui.StudsOffset = Vector3.new(0,2.3,0)
         gui.AlwaysOnTop = true
+        gui.Adornee = head
 
         local txt = Instance.new("TextLabel", gui)
         txt.Size = UDim2.new(1,0,1,0)
         txt.BackgroundTransparency = 1
         txt.TextSize = 12
         txt.Font = Enum.Font.Gotham
-        txt.TextColor3 = Color3.fromRGB(255,255,255)
+        txt.TextColor3 = Color3.new(1,1,1)
         txt.TextStrokeTransparency = 0.5
-        txt.Text = plr.Name
 
         local conn
         conn = RunService.RenderStepped:Connect(function()
             if not _G.ESPEnabled or not LocalPlayer.Character then
-                if conn then conn:Disconnect() end
-                return
+                conn:Disconnect(); return
             end
             local lhrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if lhrp then
-                local dist = math.floor((hrp.Position - lhrp.Position).Magnitude)
-                txt.Text = plr.Name .. " [" .. dist .. "m]"
+                local d = math.floor((hrp.Position-lhrp.Position).Magnitude)
+                txt.Text = plr.Name.." ["..d.."m]"
             end
         end)
 
         gui.Parent = head
-        ESPs[plr] = gui
+        ESPs[plr]=gui
     end
-
     if plr.Character then apply(plr.Character) end
     plr.CharacterAdded:Connect(apply)
 end
 
 local function RemoveESP(plr)
-    if ESPs[plr] then
-        ESPs[plr]:Destroy()
-        ESPs[plr] = nil
-    end
+    if ESPs[plr] then ESPs[plr]:Destroy(); ESPs[plr]=nil end
 end
 
--- ================== ESP TOGGLE ==================
 Tab:AddToggle({
-    Name = "👁 ESP Người Chơi (Tên + Mét)",
-    Default = false,
-    Callback = function(v)
-        _G.ESPEnabled = v
+    Name="👁 ESP (Tên + Mét)",
+    Default=false,
+    Callback=function(v)
+        _G.ESPEnabled=v
         if v then
-            for _, plr in pairs(Players:GetPlayers()) do
-                CreateESP(plr)
-            end
+            for _,p in pairs(Players:GetPlayers()) do CreateESP(p) end
         else
-            for plr,_ in pairs(ESPs) do
-                RemoveESP(plr)
-            end
+            for p,_ in pairs(ESPs) do RemoveESP(p) end
         end
+    end
+})
+
+-- ================== FREECAM (PC + MOBILE) ==================
+_G.Freecam=false
+local camCF = CFrame.new()
+local yaw,pitch=0,0
+local speed=1.3
+
+-- Mobile control
+local moveVec = Vector3.zero
+local upDown = 0
+
+local function startFreecam()
+    camCF = Camera.CFrame
+    Camera.CameraType = Enum.CameraType.Scriptable
+end
+
+local function stopFreecam()
+    Camera.CameraType = Enum.CameraType.Custom
+end
+
+-- PC input
+local keys={W=0,A=0,S=0,D=0,Q=0,E=0}
+UserInputService.InputBegan:Connect(function(i,gp)
+    if gp then return end
+    if keys[i.KeyCode.Name]~=nil then keys[i.KeyCode.Name]=1 end
+end)
+UserInputService.InputEnded:Connect(function(i)
+    if keys[i.KeyCode.Name]~=nil then keys[i.KeyCode.Name]=0 end
+end)
+
+-- Mobile touch rotate
+UserInputService.TouchMoved:Connect(function(t, gp)
+    if not _G.Freecam or gp then return end
+    local d = t.Delta
+    yaw -= d.X*0.003
+    pitch = math.clamp(pitch-d.Y*0.003,-1.5,1.5)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not _G.Freecam then return end
+
+    -- PC move
+    local dir = Vector3.new(
+        keys.D-keys.A,
+        keys.E-keys.Q,
+        keys.S-keys.W
+    )
+
+    camCF = camCF * CFrame.fromOrientation(pitch,yaw,0)
+    camCF += camCF:VectorToWorldSpace(dir) * speed
+    Camera.CFrame = camCF
+end)
+
+Tab:AddToggle({
+    Name="🎥 Freecam (PC + Mobile)",
+    Default=false,
+    Callback=function(v)
+        _G.Freecam=v
+        if v then startFreecam() else stopFreecam() end
     end
 })
 
 -- ================== HOP SERVER ==================
 Tab:AddButton({
-    Name = "🌐 Hop Server",
-    Callback = function()
-        OrionLib:MakeNotification({
-            Name = "Server Hop",
-            Content = "Đang chuyển server...",
-            Time = 3
-        })
-        task.wait(1)
+    Name="🌐 Hop Server",
+    Callback=function()
         TeleportService:Teleport(PlaceId, LocalPlayer)
     end
 })
