@@ -1,6 +1,6 @@
 -- ================== LOAD UI ==================
 local OrionLib = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/vinh12eqweaws/zingmod/refs/heads/main/zingmod"
+    "https://raw.githubusercontent.com/vinh12eqweaws/zingmods/refs/heads/main/zingpro"
 ))()
 
 local Players = game:GetService("Players")
