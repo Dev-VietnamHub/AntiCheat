@@ -1,6 +1,6 @@
 -- ================== LOAD UI ==================
 local OrionLib = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/Dev-VietnamHub/MaruFake/refs/heads/main/Ui%20thg%20trieungu%20tote.txt"
+    "https://raw.githubusercontent.com/vinh12eqweaws/zingmod/refs/heads/main/zingmod"
 ))()
 
 local Players = game:GetService("Players")
@@ -490,8 +490,6 @@ Tab:AddButton({
     end
 })
 
-local MainTab = Window:CreateTab("Teleport", "rbxassetid://4483345998")
-
 -- Danh sách tọa độ các đảo (Bạn có thể thêm tiếp vào đây)
 local IslandPositions = {
     ["Haunted Castle"] = CFrame.new(-9515.372, 164.006, 5786.061),
@@ -548,7 +546,6 @@ MainTab:AddDropdown({
     end
   end
 })
-
 MainTab:AddButton({
   Name = "Dừng Bay (Stop Tween)",
   Callback = function()
