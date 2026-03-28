@@ -330,5 +330,73 @@ Tab:AddButton({
     end
 })
 
+-- ================== NOCIP + WALKSPEED ==================
+local NoclipEnabled = false
+local WalkSpeedValue = 16
+local NoclipConnection
+
+local function SetNoclip(state)
+    NoclipEnabled = state
+    if state then
+        if NoclipConnection then NoclipConnection:Disconnect() end
+        NoclipConnection = RunService.Stepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char then
+                for _, v in pairs(char:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if NoclipConnection then
+            NoclipConnection:Disconnect()
+            NoclipConnection = nil
+        end
+    end
+end
+
+local function ApplyWalkSpeed()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = WalkSpeedValue
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.3)
+    ApplyWalkSpeed()
+    if NoclipEnabled then
+        SetNoclip(true)
+    end
+end)
+
+Tab:AddToggle({
+    Name = "🚪 Noclip (Xuyên tường)",
+    Default = false,
+    Callback = function(Value)
+        SetNoclip(Value)
+        OrionLib:MakeNotification({
+            Name = "Noclip",
+            Content = Value and "✅ Đã bật Noclip" or "❌ Đã tắt Noclip",
+            Time = 2
+        })
+    end
+})
+
+Tab:AddSlider({
+    Name = "🏃 WalkSpeed",
+    Min = 16,
+    Max = 300,
+    Default = 16,
+    Increment = 1,
+    ValueName = "Speed",
+    Callback = function(Value)
+        WalkSpeedValue = Value
+        ApplyWalkSpeed()
+    end
+})
+
 -- ================== INIT UI ==================
 OrionLib:Init()
