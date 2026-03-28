@@ -429,6 +429,28 @@ Tab:AddSlider({
     end
 })
 
+Tab:AddToggle({
+  Name = "Auto M1 (Fruit/Melee/Sword)",
+  Default = false,
+  Callback = function(Value)
+    _G.AutoM1 = Value
+    
+    -- Chạy vòng lặp trong một luồng riêng (spawn) để không làm treo UI
+    spawn(function()
+        local VirtualUser = game:GetService("VirtualUser")
+        
+        while _G.AutoM1 do
+            task.wait(0.1) -- Tốc độ click (0.1 là khá nhanh và an toàn)
+            
+            -- Kiểm tra xem người chơi có đang cầm vũ khí nào không
+            if game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool") then
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(851, 158), game.Workspace.CurrentCamera.CFrame)
+            end
+        end
+    end)
+  end
+})
 -- Đảm bảo Nhảy cao hoạt động sau khi hồi sinh
 game.Players.LocalPlayer.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid")
