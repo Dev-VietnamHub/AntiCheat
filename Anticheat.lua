@@ -120,8 +120,8 @@ local function CreateESP(plr)
         local gui = Instance.new("BillboardGui")
         gui.Name = "ESP_NAME"
         gui.Adornee = head
-        gui.Size = UDim2.new(0, 160, 0, 30)
-        gui.StudsOffset = Vector3.new(0, 2.3, 0)
+        gui.Size = UDim2.new(0, 100, 0, 20)
+        gui.StudsOffset = Vector3.new(0, 2, 0)
         gui.AlwaysOnTop = true
 
         local txt = Instance.new("TextLabel", gui)
@@ -241,6 +241,7 @@ local function ReduceLag()
         Time = 4
     })
 end
+
 -- ================== BUTTON ==================
 Tab:AddButton({
     Name = "⚡ Giảm Lag / FPS Boost",
@@ -248,6 +249,7 @@ Tab:AddButton({
         ReduceLag()
     end
 })
+
 -- ================== HOP SERVER ==================
 Tab:AddButton({
     Name = "🌐 Hop Server",
@@ -262,4 +264,71 @@ Tab:AddButton({
     end
 })
 
+-- ================== TELEPORT NGƯỜI CHƠI ==================
+local SelectedPlayer = nil
+
+local function GetPlayerNames()
+    local names = {}
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(names, plr.Name)
+        end
+    end
+    return names
+end
+
+Tab:AddDropdown({
+    Name = "🎯 Chọn người chơi để Teleport",
+    Options = GetPlayerNames(),
+    Callback = function(v)
+        SelectedPlayer = v
+    end
+})
+
+Tab:AddButton({
+    Name = "🔄 Refresh danh sách người chơi",
+    Callback = function()
+        OrionLib:MakeNotification({
+            Name = "Teleport",
+            Content = "🔄 Danh sách người chơi đã làm mới",
+            Time = 2
+        })
+    end
+})
+
+Tab:AddButton({
+    Name = "🚀 Teleport tới người chơi",
+    Callback = function()
+        if not SelectedPlayer then
+            OrionLib:MakeNotification({
+                Name = "Teleport",
+                Content = "❌ Chưa chọn người chơi",
+                Time = 3
+            })
+            return
+        end
+
+        local target = Players:FindFirstChild(SelectedPlayer)
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not myHRP then return end
+
+            myHRP.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-4)
+
+            OrionLib:MakeNotification({
+                Name = "Teleport",
+                Content = "✅ Đã teleport tới: " .. target.Name,
+                Time = 3
+            })
+        else
+            OrionLib:MakeNotification({
+                Name = "Teleport",
+                Content = "⚠ Không tìm thấy người chơi",
+                Time = 3
+            })
+        end
+    end
+})
+
+-- ================== INIT UI ==================
 OrionLib:Init()
