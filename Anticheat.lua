@@ -403,5 +403,54 @@ Tab:AddTextbox({
     end
 })
 
+local selectedPlayer = ""
+
+-- Hàm lấy danh sách tên người chơi
+local function getPlayerList()
+    local players = {}
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v.Name ~= game.Players.LocalPlayer.Name then
+            table.insert(players, v.Name)
+        end
+    end
+    return players
+end
+
+-- Tạo Dropdown chọn người chơi
+local Dropdown = Tab:AddDropdown({
+    Name = "Chọn người chơi",
+    Options = getPlayerList(),
+    Default = "",
+    Callback = function(Value)
+        selectedPlayer = Value
+    end
+})
+
+-- Nút làm mới danh sách (Refresh)
+Tab:AddButton({
+    Name = "Làm mới danh sách",
+    Callback = function()
+        Dropdown:Refresh(getPlayerList(), true)
+    end
+})
+
+-- Nút thực hiện Kill
+Tab:AddButton({
+    Name = "Kill Người Chơi",
+    Callback = function()
+        if selectedPlayer ~= "" then
+            local target = game.Players:FindFirstChild(selectedPlayer)
+            if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+                -- Lưu ý: Trong Prison Life, việc kill trực tiếp 
+                -- thường yêu cầu script phải có công cụ (Guns/Melee) 
+                -- hoặc RemoteEvent của Game.
+                target.Character.Humanoid.Health = 0
+                print("Đã tiêu diệt: " .. selectedPlayer)
+            end
+        else
+            print("Vui lòng chọn một người chơi trước!")
+        end
+    end
+})
 -- ================== INIT UI ==================
 OrionLib:Init()
