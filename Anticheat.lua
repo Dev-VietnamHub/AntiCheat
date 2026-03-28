@@ -535,8 +535,7 @@ function To(TargetCFrame)
     end)
 end
 
--- UI: Dropdown chọn đảo
-MainTab:AddDropdown({
+Tab:AddDropdown({
   Name = "Chọn Đảo Để Bay",
   Options = {"Haunted Castle", "Sea of Treats", "Floating Turtle", "Castle on the Sea"},
   Default = "Haunted Castle",
@@ -548,7 +547,7 @@ MainTab:AddDropdown({
     end
   end
 })
-MainTab:AddButton({
+Tab:AddButton({
   Name = "Dừng Bay (Stop Tween)",
   Callback = function()
     if CurrentTween then 
