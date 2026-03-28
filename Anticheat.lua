@@ -356,67 +356,52 @@ local function SetNoclip(state)
         end
     end
 end
--- ================== WALK SPEED FIX (ANTI RESET) ==================
-local WalkSpeedEnabled = false
-local WalkSpeedValue = 16
-local WalkSpeedConn
 
-local function StartWalkSpeed()
-    if WalkSpeedConn then WalkSpeedConn:Disconnect() end
-    WalkSpeedConn = RunService.RenderStepped:Connect(function()
-        local char = LocalPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.WalkSpeed = WalkSpeedValue
-        end
-    end)
-end
-
-local function StopWalkSpeed()
-    if WalkSpeedConn then
-        WalkSpeedConn:Disconnect()
-        WalkSpeedConn = nil
-    end
+local function ApplyWalkSpeed()
     local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = 16
+    if char and char:FindFirstChild("Humanoid") then
+        char.Humanoid.WalkSpeed = WalkSpeedValue
     end
 end
 
--- Toggle WalkSpeed
-Tab:AddToggle({
-    Name = "🏃 WalkSpeed (Anti Reset)",
-    Default = false,
-    Callback = function(v)
-        WalkSpeedEnabled = v
-        if v then
-            StartWalkSpeed()
-        else
-            StopWalkSpeed()
-        end
-    end
-})
-
--- Slider WalkSpeed
-Tab:AddSlider({
-    Name = "⚡ Chỉnh tốc độ chạy",
-    Min = 16,
-    Max = 300,
-    Default = 16,
-    Increment = 1,
-    ValueName = "Speed",
-    Callback = function(v)
-        WalkSpeedValue = v
-    end
-})
-
--- Giữ speed khi respawn
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.3)
-    if WalkSpeedEnabled then
-        StartWalkSpeed()
+    ApplyWalkSpeed()
+    if NoclipEnabled then
+        SetNoclip(true)
     end
 end)
+
+Tab:AddToggle({
+    Name = "🚪 Noclip (Xuyên tường)",
+    Default = false,
+    Callback = function(Value)
+        SetNoclip(Value)
+        OrionLib:MakeNotification({
+            Name = "Noclip",
+            Content = Value and "✅ Đã bật Noclip" or "❌ Đã tắt Noclip",
+            Time = 2
+        })
+    end
+})
+
+local WalkSpeedValue = 16
+
+Tab:AddTextbox({
+    Name = "🏃 Nhập WalkSpeed",
+    Default = "16",
+    TextDisappear = false,
+    Callback = function(txt)
+        local v = tonumber(txt)
+        if v and v >= 16 and v <= 120 then
+            WalkSpeedValue = v
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = WalkSpeedValue
+            end
+        end
+    end
+})
+
 -- ================== INIT UI ==================
 OrionLib:Init()
