@@ -356,47 +356,67 @@ local function SetNoclip(state)
         end
     end
 end
+-- ================== WALK SPEED FIX (ANTI RESET) ==================
+local WalkSpeedEnabled = false
+local WalkSpeedValue = 16
+local WalkSpeedConn
 
-local function ApplyWalkSpeed()
+local function StartWalkSpeed()
+    if WalkSpeedConn then WalkSpeedConn:Disconnect() end
+    WalkSpeedConn = RunService.RenderStepped:Connect(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = WalkSpeedValue
+        end
+    end)
+end
+
+local function StopWalkSpeed()
+    if WalkSpeedConn then
+        WalkSpeedConn:Disconnect()
+        WalkSpeedConn = nil
+    end
     local char = LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") then
-        char.Humanoid.WalkSpeed = WalkSpeedValue
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = 16
     end
 end
 
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.3)
-    ApplyWalkSpeed()
-    if NoclipEnabled then
-        SetNoclip(true)
-    end
-end)
-
+-- Toggle WalkSpeed
 Tab:AddToggle({
-    Name = "🚪 Noclip (Xuyên tường)",
+    Name = "🏃 WalkSpeed (Anti Reset)",
     Default = false,
-    Callback = function(Value)
-        SetNoclip(Value)
-        OrionLib:MakeNotification({
-            Name = "Noclip",
-            Content = Value and "✅ Đã bật Noclip" or "❌ Đã tắt Noclip",
-            Time = 2
-        })
+    Callback = function(v)
+        WalkSpeedEnabled = v
+        if v then
+            StartWalkSpeed()
+        else
+            StopWalkSpeed()
+        end
     end
 })
 
+-- Slider WalkSpeed
 Tab:AddSlider({
-    Name = "🏃 WalkSpeed",
+    Name = "⚡ Chỉnh tốc độ chạy",
     Min = 16,
     Max = 300,
     Default = 16,
     Increment = 1,
     ValueName = "Speed",
-    Callback = function(Value)
-        WalkSpeedValue = Value
-        ApplyWalkSpeed()
+    Callback = function(v)
+        WalkSpeedValue = v
     end
 })
 
+-- Giữ speed khi respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.3)
+    if WalkSpeedEnabled then
+        StartWalkSpeed()
+    end
+end)
 -- ================== INIT UI ==================
 OrionLib:Init()
