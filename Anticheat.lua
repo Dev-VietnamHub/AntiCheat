@@ -331,32 +331,42 @@ Tab:AddButton({
 })
 
 -- ================== NOCIP + WALKSPEED ==================
-local NoclipEnabled = false
-local WalkSpeedValue = 16
-local NoclipConnection
+local selectedPlayer = ""
+local noclipEnabled = false
+local jumpPowerValue = 100
+local noclipConn
 
-local function SetNoclip(state)
-    NoclipEnabled = state
-    if state then
-        if NoclipConnection then NoclipConnection:Disconnect() end
-        NoclipConnection = RunService.Stepped:Connect(function()
-            local char = LocalPlayer.Character
-            if char then
-                for _, v in pairs(char:GetDescendants()) do
-                    if v:IsA("BasePart") then
-                        v.CanCollide = false
+Tab:AddSection({"Di chuyển"})
+
+-- 2. NÚT BẬT/TẮT NOCLIP
+Tab:AddToggle({
+    Name = "Bật Noclip (Xuyên tường)",
+    Default = false,
+    Callback = function(Value)
+        noclipEnabled = Value
+        if noclipEnabled then
+            noclipConn = game:GetService("RunService").Stepped:Connect(function()
+                if game.Players.LocalPlayer.Character then
+                    for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        else
+            if noclipConn then noclipConn:Disconnect() end
+            -- Khôi phục va chạm
+            if game.Players.LocalPlayer.Character then
+                for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
                     end
                 end
             end
-        end)
-    else
-        if NoclipConnection then
-            NoclipConnection:Disconnect()
-            NoclipConnection = nil
         end
     end
-end
-
+})
 local function ApplyWalkSpeed()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") then
@@ -402,6 +412,30 @@ Tab:AddTextbox({
         end
     end
 })
+
+-- 3. ĐIỀU CHỈNH NHẢY CAO
+Tab:AddSlider({
+    Name = "Độ cao bước nhảy",
+    Min = 50,
+    Max = 500,
+    Default = 100,
+    Callback = function(Value)
+        jumpPowerValue = Value
+        local lp = game.Players.LocalPlayer
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+            lp.Character.Humanoid.UseJumpPower = true
+            lp.Character.Humanoid.JumpPower = jumpPowerValue
+        end
+    end
+})
+
+-- Đảm bảo Nhảy cao hoạt động sau khi hồi sinh
+game.Players.LocalPlayer.CharacterAdded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    task.wait(0.5)
+    hum.UseJumpPower = true
+    hum.JumpPower = jumpPowerValue
+end)
 
 local selectedPlayer = ""
 
