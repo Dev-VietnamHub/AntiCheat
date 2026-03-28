@@ -490,6 +490,75 @@ Tab:AddButton({
     end
 })
 
+local MainTab = Window:CreateTab("Teleport", "rbxassetid://4483345998")
+
+-- Danh sách tọa độ các đảo (Bạn có thể thêm tiếp vào đây)
+local IslandPositions = {
+    ["Haunted Castle"] = CFrame.new(-9515.372, 164.006, 5786.061),
+    ["Sea of Treats"] = CFrame.new(-13242, 38, -7612),
+    ["Floating Turtle"] = CFrame.new(-13246, 532, -7576),
+    ["Castle on the Sea"] = CFrame.new(-5075, 314, -3151)
+}
+
+-- Biến lưu trữ Tween hiện tại để có thể dừng giữa chừng
+local CurrentTween = nil
+_G.Speed = 250
+_G.Noclip = false
+
+-- Hệ thống Noclip (Giữ nguyên để bay xuyên vật cản)
+game:GetService("RunService").Stepped:Connect(function()
+    if _G.Noclip and game.Players.LocalPlayer.Character then
+        for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
+        end
+    end
+end)
+
+-- Hàm Tween cải tiến
+function To(TargetCFrame)
+    local Root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not Root then return end
+    
+    -- Nếu đang bay thì dừng cái cũ trước khi bay cái mới
+    if CurrentTween then CurrentTween:Cancel() end
+
+    local Distance = (Root.Position - TargetCFrame.Position).Magnitude
+    local TweenTime = Distance / _G.Speed
+    
+    _G.Noclip = true
+    CurrentTween = game:GetService("TweenService"):Create(Root, TweenInfo.new(TweenTime, Enum.EasingStyle.Linear), {CFrame = TargetCFrame})
+    CurrentTween:Play()
+    
+    CurrentTween.Completed:Connect(function()
+        _G.Noclip = false
+        CurrentTween = nil
+    end)
+end
+
+-- UI: Dropdown chọn đảo
+MainTab:AddDropdown({
+  Name = "Chọn Đảo Để Bay",
+  Options = {"Haunted Castle", "Sea of Treats", "Floating Turtle", "Castle on the Sea"},
+  Default = "Haunted Castle",
+  Callback = function(SelectedIsland)
+    local TargetCF = IslandPositions[SelectedIsland]
+    if TargetCF then
+        print("Đang bay tới: " .. SelectedIsland)
+        To(TargetCF)
+    end
+  end
+})
+
+MainTab:AddButton({
+  Name = "Dừng Bay (Stop Tween)",
+  Callback = function()
+    if CurrentTween then 
+        CurrentTween:Cancel() 
+        _G.Noclip = false
+        print("Đã dừng bay!")
+    end
+  end
+})
 -- Nút thực hiện Kill
 Tab:AddButton({
     Name = "Kill Người Chơi",
