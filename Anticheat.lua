@@ -491,7 +491,6 @@ Tab:AddButton({
         Dropdown:Refresh(getPlayerList(), true)
     end
 })
-
 -- Danh sách tọa độ các đảo (Bạn có thể thêm tiếp vào đây)
 local IslandPositions = {
     ["Haunted Castle"] = CFrame.new(-9515.372, 164.006, 5786.061),
@@ -504,7 +503,6 @@ local IslandPositions = {
 local CurrentTween = nil
 _G.Speed = 250
 _G.Noclip = false
-
 -- Hệ thống Noclip (Giữ nguyên để bay xuyên vật cản)
 game:GetService("RunService").Stepped:Connect(function()
     if _G.Noclip and game.Players.LocalPlayer.Character then
@@ -513,7 +511,6 @@ game:GetService("RunService").Stepped:Connect(function()
         end
     end
 end)
-
 -- Hàm Tween cải tiến
 function To(TargetCFrame)
     local Root = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
